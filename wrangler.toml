@@ -1,0 +1,12 @@
+name = "gimnasio-tracker"
+compatibility_date = "2023-12-01"
+
+[env.production]
+name = "gimnasio-tracker"
+
+# Build configuration for Cloudflare Pages
+# This file is optional but helps with configuration
+
+# Pages will automatically detect the build command from package.json
+# Build command: npm run build
+# Build output directory: dist
