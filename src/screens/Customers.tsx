@@ -19,8 +19,9 @@ export function Customers() {
   async function loadCustomers() {
     try {
       const customerList = await customerService.getAll();
-      setCustomers(customerList);
-      dispatch({ type: 'SET_CUSTOMERS', payload: customerList });
+      const sortedCustomers = customerList.sort((a, b) => a.name.localeCompare(b.name));
+      setCustomers(sortedCustomers);
+      dispatch({ type: 'SET_CUSTOMERS', payload: sortedCustomers });
     } catch (error) {
       console.error('Failed to load customers:', error);
     }
@@ -30,7 +31,7 @@ export function Customers() {
     e.preventDefault();
     try {
       const customer = await customerService.create(formData);
-      setCustomers(prev => [...prev, customer]);
+      setCustomers(prev => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name)));
       dispatch({ type: 'ADD_CUSTOMER', payload: customer });
       setFormData({ name: '', email: '', phone: '' });
       setShowForm(false);

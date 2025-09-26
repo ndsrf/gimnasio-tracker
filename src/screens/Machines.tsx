@@ -44,7 +44,10 @@ export function Machines() {
   return (
     <Layout title={t('machines')}>
       <div className="space-y-4">
-        {machines.map((machine) => (
+        {machines
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((machine) => (
           <div
             key={machine.id}
             className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"

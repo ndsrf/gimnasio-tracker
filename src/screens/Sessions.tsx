@@ -49,7 +49,8 @@ export function Sessions() {
         customerService.getAll(),
         machineService.getAll(),
       ]);
-      setCustomers(customerList);
+      const sortedCustomers = customerList.sort((a, b) => a.name.localeCompare(b.name));
+      setCustomers(sortedCustomers);
       setMachines(machineList);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -179,7 +180,10 @@ export function Sessions() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">{t('allMachines')}</option>
-                {machines.map(machine => (
+                {machines
+                  .slice()
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(machine => (
                   <option key={machine.id} value={machine.id}>
                     {machine.name} ({translateMachineType(machine.type)})
                   </option>
@@ -275,7 +279,10 @@ export function Sessions() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('selectMachine')}</option>
-                  {machines.map(machine => (
+                  {machines
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(machine => (
                     <option key={machine.id} value={machine.id}>
                       {machine.name} ({translateMachineType(machine.type)})
                     </option>
