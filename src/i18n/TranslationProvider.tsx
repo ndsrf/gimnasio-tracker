@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { TranslationContext, createTranslationFunction } from './useTranslation';
+import { TranslationContext, createTranslationFunction, createMachineTypeTranslation } from './useTranslation';
 import type { Language } from './translations';
 
 interface TranslationProviderProps {
@@ -26,12 +26,14 @@ export function TranslationProvider({ children }: TranslationProviderProps) {
   };
 
   const t = createTranslationFunction(language);
+  const translateMachineType = createMachineTypeTranslation(language);
 
   return (
     <TranslationContext.Provider value={{
       language,
       setLanguage: handleSetLanguage,
-      t
+      t,
+      translateMachineType
     }}>
       {children}
     </TranslationContext.Provider>

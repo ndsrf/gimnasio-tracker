@@ -34,10 +34,10 @@ export const translations = {
     selectType: 'Seleccionar tipo',
     noMachines: 'No hay máquinas aún. ¡Agrega tu primera máquina!',
     machineTypes: {
-      cardio: 'Cardio',
-      strength: 'Fuerza',
-      functional: 'Funcional',
-      freeWeights: 'Pesas Libres'
+      Cardio: 'Cardio',
+      Strength: 'Fuerza',
+      Functional: 'Funcional',
+      'Free Weights': 'Pesas Libres'
     },
 
     // Sessions
@@ -139,10 +139,10 @@ export const translations = {
     selectType: 'Select type',
     noMachines: 'No machines yet. Add your first machine!',
     machineTypes: {
-      cardio: 'Cardio',
-      strength: 'Strength',
-      functional: 'Functional',
-      freeWeights: 'Free Weights'
+      Cardio: 'Cardio',
+      Strength: 'Strength',
+      Functional: 'Functional',
+      'Free Weights': 'Free Weights'
     },
 
     // Sessions

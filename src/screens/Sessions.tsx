@@ -9,7 +9,7 @@ import { useTranslation } from '../i18n/useTranslation';
 
 export function Sessions() {
   const { state, dispatch } = useApp();
-  const { t } = useTranslation();
+  const { t, translateMachineType } = useTranslation();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutWithDetails[]>([]);
@@ -181,7 +181,7 @@ export function Sessions() {
                 <option value="">{t('allMachines')}</option>
                 {machines.map(machine => (
                   <option key={machine.id} value={machine.id}>
-                    {machine.name} ({machine.type})
+                    {machine.name} ({translateMachineType(machine.type)})
                   </option>
                 ))}
               </select>
@@ -277,7 +277,7 @@ export function Sessions() {
                   <option value="">{t('selectMachine')}</option>
                   {machines.map(machine => (
                     <option key={machine.id} value={machine.id}>
-                      {machine.name} ({machine.type})
+                      {machine.name} ({translateMachineType(machine.type)})
                     </option>
                   ))}
                 </select>

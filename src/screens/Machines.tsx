@@ -7,7 +7,7 @@ import { useTranslation } from '../i18n/useTranslation';
 
 export function Machines() {
   const { dispatch } = useApp();
-  const { t } = useTranslation();
+  const { t, translateMachineType } = useTranslation();
   const [machines, setMachines] = useState<Machine[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', type: '' });
@@ -52,7 +52,7 @@ export function Machines() {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-medium text-gray-900">{machine.name}</h3>
-                <p className="text-sm text-gray-600">{machine.type}</p>
+                <p className="text-sm text-gray-600">{translateMachineType(machine.type)}</p>
               </div>
               <span className="text-xs text-gray-500">
                 {new Date(machine.createdAt).toLocaleDateString()}
@@ -98,7 +98,7 @@ export function Machines() {
                 >
                   <option value="">{t('selectType')}</option>
                   {machineTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type} value={type}>{translateMachineType(type)}</option>
                   ))}
                 </select>
               </div>

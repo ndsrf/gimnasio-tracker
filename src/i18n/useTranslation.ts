@@ -6,6 +6,7 @@ interface TranslationContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: TranslationKey) => string;
+  translateMachineType: (type: string) => string;
 }
 
 export const TranslationContext = createContext<TranslationContextType | null>(null);
@@ -32,5 +33,12 @@ export function createTranslationFunction(language: Language) {
       return String(value);
     }
     return key;
+  };
+}
+
+export function createMachineTypeTranslation(language: Language) {
+  return (type: string): string => {
+    const machineTypes = translations[language].machineTypes as any;
+    return machineTypes[type] || type;
   };
 }
