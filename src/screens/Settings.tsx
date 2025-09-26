@@ -1,12 +1,100 @@
+import { useState, useRef } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { useTranslation } from '../i18n/useTranslation';
+import { dataExportService } from '../services/dataExport';
 
 export function Settings() {
   const { t, language, setLanguage } = useTranslation();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      await dataExportService.exportAndDownload();
+      setMessage({ type: 'success', text: t('exportSuccess') });
+    } catch (error) {
+      console.error('Export failed:', error);
+      setMessage({ type: 'error', text: t('exportError') });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    handleImport(file);
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImport = async (file: File) => {
+    try {
+      setIsImporting(true);
+      const result = await dataExportService.importFromFile(file);
+
+      if (result.success) {
+        setMessage({ type: 'success', text: result.message });
+        // Reload the page to refresh all data
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setMessage({ type: 'error', text: result.message });
+      }
+    } catch (error) {
+      console.error('Import failed:', error);
+      setMessage({ type: 'error', text: t('importError') });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    try {
+      await dataExportService.clearAllData();
+      setMessage({ type: 'success', text: 'All data cleared successfully' });
+      setShowClearConfirm(false);
+      // Reload the page to refresh all data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('Clear data failed:', error);
+      setMessage({ type: 'error', text: 'Failed to clear data' });
+    }
+  };
+
+  const clearMessage = () => {
+    setTimeout(() => setMessage(null), 5000);
+  };
+
+  // Clear message after 5 seconds
+  if (message) {
+    clearMessage();
+  }
 
   return (
     <Layout title={t('settings')}>
       <div className="space-y-6">
+        {/* Message Display */}
+        {message && (
+          <div className={`p-4 rounded-lg ${
+            message.type === 'success'
+              ? 'bg-green-50 text-green-800 border border-green-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+            {message.text}
+          </div>
+        )}
+
         {/* Language Selection */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('language')}</h2>
@@ -36,6 +124,83 @@ export function Settings() {
           </div>
         </div>
 
+        {/* Data Backup Section */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dataBackup')}</h2>
+
+          {/* Export Data */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-900 mb-2">{t('exportData')}</h3>
+            <p className="text-sm text-gray-600 mb-3">{t('exportDescription')}</p>
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {isExporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {t('loading')}
+                </>
+              ) : (
+                <>
+                  📥 {t('exportButton')}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Import Data */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-900 mb-2">{t('importData')}</h3>
+            <p className="text-sm text-gray-600 mb-3">{t('importDescription')}</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImportFile}
+              className="hidden"
+              id="import-file"
+            />
+            <label
+              htmlFor="import-file"
+              className={`px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 cursor-pointer inline-flex items-center ${
+                isImporting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isImporting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {t('loading')}
+                </>
+              ) : (
+                <>
+                  📤 {t('importButton')}
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+
+        {/* Data Management Section */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('data')}</h2>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">
+              {t('dataDescription')}
+            </p>
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+            >
+              {t('clearAllData')}
+            </button>
+            <p className="text-xs text-gray-500">
+              {t('clearDataWarning')}
+            </p>
+          </div>
+        </div>
+
         {/* About Section */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('about')}</h2>
@@ -43,22 +208,6 @@ export function Settings() {
             <p><strong>Gym Tracker</strong></p>
             <p>{t('version')} 1.0.0</p>
             <p>{t('appDescription')}</p>
-          </div>
-        </div>
-
-        {/* Data Section */}
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('data')}</h2>
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600">
-              {t('dataDescription')}
-            </p>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">
-              {t('clearAllData')}
-            </button>
-            <p className="text-xs text-gray-500">
-              {t('clearDataWarning')}
-            </p>
           </div>
         </div>
 
@@ -71,6 +220,8 @@ export function Settings() {
                 <p>• Gestionar clientes y máquinas</p>
                 <p>• Rastrear sesiones de entrenamiento con series, repeticiones y peso</p>
                 <p>• Filtrar entrenamientos por máquina</p>
+                <p>• Hacer clic para editar entrenamientos</p>
+                <p>• Exportar e importar datos de respaldo</p>
                 <p>• Funciona sin conexión - no requiere internet</p>
                 <p>• Diseño responsivo móvil</p>
               </>
@@ -79,6 +230,8 @@ export function Settings() {
                 <p>• Manage customers and machines</p>
                 <p>• Track workout sessions with sets, reps, and weight</p>
                 <p>• Filter workouts by machine</p>
+                <p>• Click to edit workouts</p>
+                <p>• Export and import backup data</p>
                 <p>• Works offline - no internet required</p>
                 <p>• Mobile-first responsive design</p>
               </>
@@ -86,6 +239,34 @@ export function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Clear Data Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4 text-red-600">
+              {t('clearAllData')}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {t('confirmClearData')}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                onClick={handleClearData}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                {t('confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
