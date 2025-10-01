@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { useReducer, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Customer, Machine, Workout, NavigationTab } from '../types';
 import { db } from '../services/database';
+import { AppContext } from './AppContext';
 
 interface AppState {
   currentTab: NavigationTab;
@@ -100,11 +101,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
   }
 }
 
-const AppContext = createContext<{
-  state: AppState;
-  dispatch: React.Dispatch<AppAction>;
-} | null>(null);
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
@@ -113,7 +109,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         await db.init();
         dispatch({ type: 'SET_LOADING', payload: false });
-      } catch (error) {
+      } catch {
         dispatch({ type: 'SET_ERROR', payload: 'Failed to initialize database' });
         dispatch({ type: 'SET_LOADING', payload: false });
       }
@@ -127,12 +123,4 @@ export function AppProvider({ children }: { children: ReactNode }) {
       {children}
     </AppContext.Provider>
   );
-}
-
-export function useApp() {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
 }

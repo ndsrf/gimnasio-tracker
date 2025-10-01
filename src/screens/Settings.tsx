@@ -206,7 +206,7 @@ export function Settings() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('about')}</h2>
           <div className="space-y-2 text-sm text-gray-600">
             <p><strong>Gym Tracker</strong></p>
-            <p>{t('version')} 1.0.0</p>
+            <p>{t('version')} 1.1.0</p>
             <p>{t('appDescription')}</p>
           </div>
         </div>

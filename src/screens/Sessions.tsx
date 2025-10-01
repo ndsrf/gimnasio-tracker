@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../components/layout/Layout';
-import type { Customer, Machine, WorkoutWithDetails } from '../types';
+import type { Customer, Machine, WorkoutWithDetails, WorkoutSeries } from '../types';
 import { customerService } from '../services/customers';
 import { machineService } from '../services/machines';
 import { workoutService } from '../services/workouts';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import { useTranslation } from '../i18n/useTranslation';
 
 export function Sessions() {
@@ -20,9 +20,7 @@ export function Sessions() {
   const [workoutForm, setWorkoutForm] = useState({
     machineId: '',
     date: new Date().toISOString().split('T')[0],
-    sets: '',
-    reps: '',
-    weight: '',
+    series: [{ sets: '', reps: '', weight: '' }],
     notes: '',
   });
 
@@ -46,7 +44,7 @@ export function Sessions() {
   async function loadData() {
     try {
       const [customerList, machineList] = await Promise.all([
-        customerService.getAll(),
+        customerService.getActive(),
         machineService.getAll(),
       ]);
       const sortedCustomers = customerList.sort((a, b) => a.name.localeCompare(b.name));
@@ -70,34 +68,36 @@ export function Sessions() {
     e.preventDefault();
     if (!selectedCustomerId) return;
 
+    const workoutData = {
+      machineId: workoutForm.machineId,
+      date: new Date(workoutForm.date),
+      series: workoutForm.series.map(s => ({
+        sets: parseInt(s.sets, 10) || 0,
+        reps: parseInt(s.reps, 10) || 0,
+        weight: parseFloat(s.weight) || 0,
+      })).filter(s => s.sets > 0 && s.reps > 0),
+      notes: workoutForm.notes || undefined,
+    };
+
+    if (workoutData.series.length === 0) {
+      // TODO: Show an error to the user
+      console.error("Cannot save a workout with no series data.");
+      return;
+    }
+
     try {
       if (editingWorkout) {
-        // Update existing workout
-        await workoutService.update(editingWorkout.id, {
-          machineId: workoutForm.machineId,
-          date: new Date(workoutForm.date),
-          sets: parseInt(workoutForm.sets),
-          reps: parseInt(workoutForm.reps),
-          weight: parseFloat(workoutForm.weight),
-          notes: workoutForm.notes || undefined,
-        });
-
+        await workoutService.update(editingWorkout.id, workoutData);
         const updatedWorkout = await workoutService.getById(editingWorkout.id);
         if (updatedWorkout) {
           dispatch({ type: 'UPDATE_WORKOUT', payload: updatedWorkout });
         }
       } else {
-        // Create new workout
         const workout = await workoutService.create({
           customerId: selectedCustomerId,
-          machineId: workoutForm.machineId,
-          date: new Date(workoutForm.date),
-          sets: parseInt(workoutForm.sets),
-          reps: parseInt(workoutForm.reps),
-          weight: parseFloat(workoutForm.weight),
-          notes: workoutForm.notes || undefined,
+          ...workoutData,
+          series: workoutData.series as WorkoutSeries[],
         });
-
         dispatch({ type: 'ADD_WORKOUT', payload: workout });
       }
 
@@ -112,9 +112,7 @@ export function Sessions() {
     setWorkoutForm({
       machineId: selectedMachineId || '',
       date: new Date().toISOString().split('T')[0],
-      sets: '',
-      reps: '',
-      weight: '',
+      series: [{ sets: '', reps: '', weight: '' }],
       notes: '',
     });
     setShowWorkoutForm(false);
@@ -126,6 +124,7 @@ export function Sessions() {
     setWorkoutForm(prev => ({
       ...prev,
       machineId: selectedMachineId || '',
+      series: [{ sets: '', reps: '', weight: '' }],
     }));
     setShowWorkoutForm(true);
   }
@@ -135,12 +134,33 @@ export function Sessions() {
     setWorkoutForm({
       machineId: workout.machineId,
       date: new Date(workout.date).toISOString().split('T')[0],
-      sets: workout.sets.toString(),
-      reps: workout.reps.toString(),
-      weight: workout.weight.toString(),
+      series: workout.series && workout.series.length > 0 ? workout.series.map(s => ({
+        sets: s.sets.toString(),
+        reps: s.reps.toString(),
+        weight: s.weight.toString(),
+      })) : [{ sets: '', reps: '', weight: '' }],
       notes: workout.notes || '',
     });
     setShowWorkoutForm(true);
+  }
+
+  function handleSeriesChange(index: number, field: 'sets' | 'reps' | 'weight', value: string) {
+    const newSeries = [...workoutForm.series];
+    newSeries[index][field] = value;
+    setWorkoutForm(prev => ({ ...prev, series: newSeries }));
+  }
+
+  function addSeriesRow() {
+    setWorkoutForm(prev => ({
+      ...prev,
+      series: [...prev.series, { sets: '', reps: '', weight: '' }],
+    }));
+  }
+
+  function removeSeriesRow(index: number) {
+    const newSeries = [...workoutForm.series];
+    newSeries.splice(index, 1);
+    setWorkoutForm(prev => ({ ...prev, series: newSeries }));
   }
 
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
@@ -155,7 +175,7 @@ export function Sessions() {
           </label>
           <select
             value={selectedCustomerId}
-            onChange={(e) => setSelectedCustomerId(e.target.value)}
+            onChange={(e) => dispatch({ type: 'SET_SELECTED_CUSTOMER', payload: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t('chooseCustomer')}</option>
@@ -222,13 +242,10 @@ export function Sessions() {
                             {new Date(workout.date).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-gray-900">
-                            {workout.sets} {t('setsReps').split(' × ')[0]} × {workout.reps} {t('setsReps').split(' × ')[1]}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {workout.weight} kg
-                          </p>
+                        <div className="text-right text-sm">
+                          {workout.series?.map((s, i) => (
+                            <div key={i}>{s.sets} {t('setsReps').split(' × ')[0]} × {s.reps} {t('setsReps').split(' × ')[1]} @ {s.weight} kg</div>
+                          ))}
                         </div>
                       </div>
                       {workout.notes && (
@@ -245,8 +262,8 @@ export function Sessions() {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   {t('noWorkouts')}
-                  {selectedMachineId && ` ${t('removeFilter')} `}
-                  {t('addFirst')}
+                  {selectedMachineId && ` ${t('removeFilter')}`} {' '}
+                  <button onClick={openWorkoutForm} className='text-blue-500 hover:underline'>{t('addFirst')}</button>
                 </div>
               )}
             </div>
@@ -303,47 +320,53 @@ export function Sessions() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('sets')} *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    value={workoutForm.sets}
-                    onChange={(e) => setWorkoutForm(prev => ({ ...prev, sets: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('reps')} *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    value={workoutForm.reps}
-                    onChange={(e) => setWorkoutForm(prev => ({ ...prev, reps: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('weight')} *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="0.5"
-                    value={workoutForm.weight}
-                    onChange={(e) => setWorkoutForm(prev => ({ ...prev, weight: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+              {/* Series Inputs */}
+              <div className='space-y-3'>
+                {workoutForm.series.map((s, index) => (
+                  <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                    <div className='col-span-3'>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">{t('sets')}</label>
+                      <input
+                        type="number" required min="1" value={s.sets}
+                        onChange={(e) => handleSeriesChange(index, 'sets', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                      />
+                    </div>
+                    <div className='col-span-3'>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">{t('reps')}</label>
+                      <input
+                        type="number" required min="1" value={s.reps}
+                        onChange={(e) => handleSeriesChange(index, 'reps', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                      />
+                    </div>
+                    <div className='col-span-4'>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">{t('weight')} (kg)</label>
+                      <input
+                        type="number" required min="0" step="0.5" value={s.weight}
+                        onChange={(e) => handleSeriesChange(index, 'weight', e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                      />
+                    </div>
+                    <div className='col-span-2 flex items-end h-full'>
+                      <button
+                        type="button"
+                        onClick={() => removeSeriesRow(index)}
+                        disabled={workoutForm.series.length <= 1}
+                        className="w-full text-red-500 disabled:text-gray-300 text-center font-bold text-xl"
+                      >
+                        -
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addSeriesRow}
+                  className="w-full text-sm py-1 text-blue-600 border-2 border-dashed border-blue-300 rounded-md hover:bg-blue-50"
+                >
+                  + {t('addSet')}
+                </button>
               </div>
 
               <div>
@@ -353,7 +376,7 @@ export function Sessions() {
                 <textarea
                   value={workoutForm.notes}
                   onChange={(e) => setWorkoutForm(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={3}
+                  rows={2}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder={t('workoutNotes')}
                 />

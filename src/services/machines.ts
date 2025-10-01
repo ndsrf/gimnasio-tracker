@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import type { Machine } from '../types';
+import type { Machine, Workout } from '../types';
 import { db } from './database';
+import { workoutService } from './workouts';
 
 export const machineService = {
   async getAll(): Promise<Machine[]> {
@@ -11,11 +12,19 @@ export const machineService = {
     return db.getById<Machine>('machines', id);
   },
 
-  async create(data: Omit<Machine, 'id' | 'createdAt'>): Promise<Machine> {
+  async create(data: Partial<Machine>): Promise<Machine> {
+    if (data.id) {
+      const existing = await this.getById(data.id);
+      if (existing) {
+        return this.update(data.id, data);
+      }
+    }
+
     const machine: Machine = {
-      ...data,
-      id: uuidv4(),
-      createdAt: new Date(),
+      id: data.id || uuidv4(),
+      name: data.name!,
+      type: data.type!,
+      createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
     };
 
     await db.add('machines', machine);
@@ -36,6 +45,11 @@ export const machineService = {
   },
 
   async delete(id: string): Promise<void> {
+    const workouts = await db.getAll<Workout>('workouts');
+    const workoutsByMachine = workouts.filter(w => w.machineId === id);
+    for (const workout of workoutsByMachine) {
+      await workoutService.delete(workout.id);
+    }
     await db.delete('machines', id);
   },
 };

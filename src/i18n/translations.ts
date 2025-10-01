@@ -23,6 +23,9 @@ export const translations = {
 
     // Customers
     addCustomer: 'Agregar Cliente',
+    editCustomer: 'Editar Cliente',
+    saveChanges: 'Guardar Cambios',
+    deactivated: 'Desactivado',
     customerName: 'Nombre del Cliente',
     noCustomers: 'No hay clientes aún. ¡Agrega tu primer cliente!',
     customerAdded: 'Cliente agregado',
@@ -61,6 +64,7 @@ export const translations = {
     weight: 'Peso (kg)',
     workoutNotes: 'Notas sobre el entrenamiento...',
     setsReps: 'series × repeticiones',
+    addSet: 'Añadir Serie',
 
     // Settings
     about: 'Acerca de',
@@ -97,6 +101,13 @@ export const translations = {
     loadingGymTracker: 'Cargando Gym Tracker...',
     failedToInitialize: 'Error al inicializar la base de datos',
 
+    // New Features Popup
+    newFeaturesTitle: '¡Nuevas Características en la Versión 1.1.0!',
+    newFeaturesDescription: 'Hemos añadido algunas mejoras emocionantes para ti:',
+    featureEditDeactivateUsers: 'Ahora puedes editar y desactivar clientes existentes.',
+    featureMultipleSeriesReps: 'Registra múltiples series y repeticiones para cada entrenamiento.',
+    gotIt: '¡Entendido!',
+
     // Form validation
     required: 'requerido',
 
@@ -128,6 +139,9 @@ export const translations = {
 
     // Customers
     addCustomer: 'Add Customer',
+    editCustomer: 'Edit Customer',
+    saveChanges: 'Save Changes',
+    deactivated: 'Deactivated',
     customerName: 'Customer Name',
     noCustomers: 'No customers yet. Add your first customer!',
     customerAdded: 'Customer added',
@@ -166,6 +180,7 @@ export const translations = {
     weight: 'Weight (kg)',
     workoutNotes: 'Any notes about the workout...',
     setsReps: 'sets × reps',
+    addSet: 'Add Set',
 
     // Settings
     about: 'About',
@@ -190,7 +205,7 @@ export const translations = {
     dataBackup: 'Data Backup',
     features: 'Features',
     featuresList: [
-      '• Manage customers and machines',
+      '• Manage customers and',
       '• Track workout sessions with sets, reps, and weight',
       '• Filter workouts by machine',
       '• Works offline - no internet required',
@@ -201,6 +216,13 @@ export const translations = {
     // Loading and Error states
     loadingGymTracker: 'Loading Gym Tracker...',
     failedToInitialize: 'Failed to initialize database',
+
+    // New Features Popup
+    newFeaturesTitle: 'New Features in Version 1.1.0!',
+    newFeaturesDescription: 'We\'ve added some exciting improvements for you:',
+    featureEditDeactivateUsers: 'You can now edit and deactivate existing customers.',
+    featureMultipleSeriesReps: 'Record multiple series and repetitions for each workout.',
+    gotIt: 'Got It!',
 
     // Form validation
     required: 'required',

@@ -1,5 +1,5 @@
 import type { NavigationTab } from '../../types';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 import { useTranslation } from '../../i18n/useTranslation';
 
 const tabIcons: Record<NavigationTab, string> = {

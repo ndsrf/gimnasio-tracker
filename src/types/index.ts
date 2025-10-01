@@ -3,6 +3,7 @@ export interface Customer {
   name: string;
   email?: string;
   phone?: string;
+  deactivated: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,16 +15,24 @@ export interface Machine {
   createdAt: Date;
 }
 
+export interface WorkoutSeries {
+  sets: number;
+  reps: number;
+  weight: number;
+}
+
 export interface Workout {
   id: string;
   customerId: string;
   machineId: string;
   date: Date;
-  sets: number;
-  reps: number;
-  weight: number;
+  series: WorkoutSeries[];
   notes?: string;
   createdAt: Date;
+  // Legacy fields for migration
+  sets?: number;
+  reps?: number;
+  weight?: number;
 }
 
 export interface WorkoutWithDetails extends Workout {

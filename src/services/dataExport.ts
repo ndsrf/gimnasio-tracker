@@ -31,7 +31,7 @@ export const dataExportService = {
       ]);
 
       const exportData: ExportData = {
-        version: '1.0.0',
+        version: '1.1.0', // Bump version for new structure
         exportDate: new Date().toISOString(),
         customers,
         machines,
@@ -73,119 +73,79 @@ export const dataExportService = {
   },
 
   validateImportData(data: any): data is ExportData {
-    if (!data || typeof data !== 'object') {
-      return false;
-    }
+    if (!data || typeof data !== 'object') return false;
 
-    // Check required fields
-    if (!data.version || !data.exportDate || !Array.isArray(data.customers) ||
-        !Array.isArray(data.machines) || !Array.isArray(data.workouts)) {
-      return false;
-    }
+    const hasBaseProps = data.version && data.exportDate && Array.isArray(data.customers) &&
+                         Array.isArray(data.machines) && Array.isArray(data.workouts);
+    if (!hasBaseProps) return false;
 
-    // Validate customer structure
-    for (const customer of data.customers) {
-      if (!customer.id || !customer.name || !customer.createdAt || !customer.updatedAt) {
-        return false;
-      }
-    }
+    const areCustomersValid = (data.customers as any[]).every((c: any) => c.id && c.name && c.createdAt && c.updatedAt);
+    if (!areCustomersValid) return false;
 
-    // Validate machine structure
-    for (const machine of data.machines) {
-      if (!machine.id || !machine.name || !machine.type || !machine.createdAt) {
-        return false;
-      }
-    }
+    const areMachinesValid = (data.machines as any[]).every((m: any) => m.id && m.name && m.type && m.createdAt);
+    if (!areMachinesValid) return false;
 
-    // Validate workout structure
-    for (const workout of data.workouts) {
-      if (!workout.id || !workout.customerId || !workout.machineId ||
-          !workout.date || typeof workout.sets !== 'number' ||
-          typeof workout.reps !== 'number' || typeof workout.weight !== 'number' ||
-          !workout.createdAt) {
-        return false;
-      }
-    }
+    const areWorkoutsValid = (data.workouts as any[]).every((w: any) => {
+      const hasBaseFields = w.id && w.customerId && w.machineId && w.date && w.createdAt;
+      if (!hasBaseFields) return false;
+
+      const hasNewSeries = Array.isArray(w.series) && (w.series as any[]).every(
+        (s: any) => typeof s.sets === 'number' && typeof s.reps === 'number' && typeof s.weight === 'number'
+      );
+      const hasOldSeries = typeof w.sets === 'number' && typeof w.reps === 'number' && typeof w.weight === 'number';
+
+      return hasNewSeries || hasOldSeries;
+    });
+    if (!areWorkoutsValid) return false;
 
     return true;
   },
 
   async importData(data: ExportData): Promise<ImportResult> {
-    try {
-      if (!this.validateImportData(data)) {
-        return {
-          success: false,
-          message: 'Invalid data format. Please check the file and try again.',
-        };
-      }
-
-      let importedCounts = {
-        customers: 0,
-        machines: 0,
-        workouts: 0,
+    if (!this.validateImportData(data)) {
+      return {
+        success: false,
+        message: 'Invalid data format. Please check the file and try again.',
       };
+    }
 
-      // Import data and let duplicates be handled by the database constraints
+    try {
+      await this.clearAllData();
 
-      // Import customers
       for (const customer of data.customers) {
-        try {
-          await customerService.create({
-            name: customer.name,
-            email: customer.email,
-            phone: customer.phone,
-          });
-          importedCounts.customers++;
-        } catch (error) {
-          // Customer might already exist, skip or handle as needed
-          console.warn(`Failed to import customer ${customer.name}:`, error);
-        }
+        await customerService.create(customer);
       }
 
-      // Import machines
       for (const machine of data.machines) {
-        try {
-          await machineService.create({
-            name: machine.name,
-            type: machine.type,
-          });
-          importedCounts.machines++;
-        } catch (error) {
-          // Machine might already exist, skip or handle as needed
-          console.warn(`Failed to import machine ${machine.name}:`, error);
-        }
+        await machineService.create(machine);
       }
 
-      // Import workouts
       for (const workout of data.workouts) {
-        try {
-          await workoutService.create({
-            customerId: workout.customerId,
-            machineId: workout.machineId,
-            date: new Date(workout.date),
-            sets: workout.sets,
-            reps: workout.reps,
-            weight: workout.weight,
-            notes: workout.notes,
-          });
-          importedCounts.workouts++;
-        } catch (error) {
-          // Workout might already exist or reference invalid IDs, skip
-          console.warn(`Failed to import workout ${workout.id}:`, error);
+        const series = (workout.series && workout.series.length > 0)
+          ? workout.series
+          : (typeof workout.sets === 'number'
+            ? [{ sets: workout.sets, reps: workout.reps as number, weight: workout.weight as number }]
+            : []);
+
+        if (series.length > 0) {
+          await workoutService.create({ ...workout, series });
         }
       }
 
       return {
         success: true,
-        message: `Successfully imported ${importedCounts.customers} customers, ${importedCounts.machines} machines, and ${importedCounts.workouts} workouts.`,
-        imported: importedCounts,
+        message: `Successfully imported ${data.customers.length} customers, ${data.machines.length} machines, and ${data.workouts.length} workouts.`,
+        imported: {
+          customers: data.customers.length,
+          machines: data.machines.length,
+          workouts: data.workouts.length,
+        },
       };
-
     } catch (error) {
       console.error('Failed to import data:', error);
       return {
         success: false,
-        message: 'Failed to import data. Please try again.',
+        message: 'An error occurred during the import process. Please check the data and try again.',
       };
     }
   },
@@ -200,7 +160,7 @@ export const dataExportService = {
           const data = JSON.parse(jsonString);
           const result = await this.importData(data);
           resolve(result);
-        } catch (error) {
+        } catch {
           resolve({
             success: false,
             message: 'Invalid JSON file. Please check the file format and try again.',
@@ -221,24 +181,20 @@ export const dataExportService = {
 
   async clearAllData(): Promise<void> {
     try {
-      // Get all data
       const [customers, machines, workouts] = await Promise.all([
         customerService.getAll(),
         machineService.getAll(),
         workoutService.getAll(),
       ]);
 
-      // Delete all workouts first (to avoid foreign key issues)
       for (const workout of workouts) {
         await workoutService.delete(workout.id);
       }
 
-      // Delete all customers
       for (const customer of customers) {
         await customerService.delete(customer.id);
       }
 
-      // Delete all machines
       for (const machine of machines) {
         await machineService.delete(machine.id);
       }

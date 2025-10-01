@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Layout } from '../components/layout/Layout';
 import type { Machine } from '../types';
 import { machineService } from '../services/machines';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import { useTranslation } from '../i18n/useTranslation';
 
 export function Machines() {
@@ -12,11 +12,7 @@ export function Machines() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', type: '' });
 
-  useEffect(() => {
-    loadMachines();
-  }, []);
-
-  async function loadMachines() {
+  const loadMachines = useCallback(async () => {
     try {
       const machineList = await machineService.getAll();
       setMachines(machineList);
@@ -24,7 +20,11 @@ export function Machines() {
     } catch (error) {
       console.error('Failed to load machines:', error);
     }
-  }
+  }, [dispatch]);
+
+  useEffect(() => {
+    loadMachines();
+  }, [loadMachines]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

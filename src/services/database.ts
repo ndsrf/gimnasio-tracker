@@ -1,7 +1,7 @@
 import type { Workout } from '../types';
 
 const DB_NAME = 'gym_tracker_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export class DatabaseService {
   private db: IDBDatabase | null = null;
@@ -18,6 +18,7 @@ export class DatabaseService {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        const transaction = (event.target as IDBOpenDBRequest).transaction;
 
         // Create customers store
         if (!db.objectStoreNames.contains('customers')) {
@@ -38,6 +39,24 @@ export class DatabaseService {
           workoutStore.createIndex('customerId', 'customerId');
           workoutStore.createIndex('machineId', 'machineId');
           workoutStore.createIndex('date', 'date');
+        }
+
+        // Migration for version 2: Add 'deactivated' to customers
+        if (event.oldVersion < 2) {
+          if (transaction) {
+            const customerStore = transaction.objectStore('customers');
+            customerStore.openCursor().onsuccess = (e) => {
+              const cursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
+              if (cursor) {
+                const customer = cursor.value;
+                if (typeof customer.deactivated === 'undefined') {
+                  customer.deactivated = false;
+                  cursor.update(customer);
+                }
+                cursor.continue();
+              }
+            };
+          }
         }
       };
     });

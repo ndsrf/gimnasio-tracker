@@ -38,7 +38,7 @@ export function createTranslationFunction(language: Language) {
 
 export function createMachineTypeTranslation(language: Language) {
   return (type: string): string => {
-    const machineTypes = translations[language].machineTypes as any;
+    const machineTypes = translations[language].machineTypes as Record<string, string>;
     return machineTypes[type] || type;
   };
 }
