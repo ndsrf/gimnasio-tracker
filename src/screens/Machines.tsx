@@ -10,7 +10,10 @@ export function Machines() {
   const { t, translateMachineType } = useTranslation();
   const [machines, setMachines] = useState<Machine[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', type: '' });
+  const [editingMachine, setEditingMachine] = useState<Machine | null>(null);
+  const [formData, setFormData] = useState({ id: '', name: '', type: '' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [machineToDeleteId, setMachineToDeleteId] = useState<string | null>(null);
 
   const loadMachines = useCallback(async () => {
     try {
@@ -29,15 +32,52 @@ export function Machines() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const machine = await machineService.create(formData);
-      setMachines(prev => [...prev, machine]);
-      dispatch({ type: 'ADD_MACHINE', payload: machine });
-      setFormData({ name: '', type: '' });
+      if (editingMachine) {
+        const updatedMachine = await machineService.update(editingMachine.id, { name: formData.name, type: formData.type });
+        setMachines(prev => prev.map(m => (m.id === updatedMachine.id ? updatedMachine : m)));
+        dispatch({ type: 'UPDATE_MACHINE', payload: updatedMachine });
+      } else {
+        const newMachine = await machineService.create({ name: formData.name, type: formData.type });
+        setMachines(prev => [...prev, newMachine]);
+        dispatch({ type: 'ADD_MACHINE', payload: newMachine });
+      }
+      setFormData({ id: '', name: '', type: '' });
+      setEditingMachine(null);
       setShowForm(false);
     } catch (error) {
-      console.error('Failed to create machine:', error);
+      console.error('Failed to save machine:', error);
     }
   }
+
+  const handleEditClick = (machine: Machine) => {
+    setEditingMachine(machine);
+    setFormData({ id: machine.id, name: machine.name, type: machine.type });
+    setShowForm(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setMachineToDeleteId(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (machineToDeleteId) {
+      try {
+        await machineService.delete(machineToDeleteId);
+        setMachines(prev => prev.filter(m => m.id !== machineToDeleteId));
+        dispatch({ type: 'DELETE_MACHINE', payload: machineToDeleteId });
+        setMachineToDeleteId(null);
+        setShowDeleteConfirm(false);
+      } catch (error) {
+        console.error('Failed to delete machine:', error);
+      }
+    }
+  };
+
+  const cancelDelete = () => {
+    setMachineToDeleteId(null);
+    setShowDeleteConfirm(false);
+  };
 
   const machineTypes = ['Cardio', 'Strength', 'Functional', 'Free Weights'];
 
@@ -57,9 +97,20 @@ export function Machines() {
                 <h3 className="font-medium text-gray-900">{machine.name}</h3>
                 <p className="text-sm text-gray-600">{translateMachineType(machine.type)}</p>
               </div>
-              <span className="text-xs text-gray-500">
-                {new Date(machine.createdAt).toLocaleDateString()}
-              </span>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => handleEditClick(machine)}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  {t('edit')}
+                </button>
+                <button
+                  onClick={() => handleDeleteClick(machine.id)}
+                  className="text-red-600 hover:text-red-800 text-sm"
+                >
+                  {t('delete')}
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -74,7 +125,7 @@ export function Machines() {
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-lg font-semibold mb-4">{t('addMachine')}</h2>
+            <h2 className="text-lg font-semibold mb-4">{editingMachine ? t('editMachine') : t('addMachine')}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -108,7 +159,11 @@ export function Machines() {
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingMachine(null);
+                    setFormData({ id: '', name: '', type: '' });
+                  }}
                   className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                 >
                   {t('cancel')}
@@ -117,7 +172,7 @@ export function Machines() {
                   type="submit"
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  {t('addMachine')}
+                  {editingMachine ? t('saveChanges') : t('addMachine')}
                 </button>
               </div>
             </form>
@@ -125,8 +180,37 @@ export function Machines() {
         </div>
       )}
 
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-lg font-semibold mb-4">{t('confirmDelete')}</h2>
+            <p>{t('confirmDeleteMachineMessage')}</p>
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={cancelDelete}
+                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                {t('delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <button
-        onClick={() => setShowForm(true)}
+        onClick={() => {
+          setShowForm(true);
+          setEditingMachine(null);
+          setFormData({ id: '', name: '', type: '' });
+        }}
         className="fixed bottom-24 right-4 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 flex items-center justify-center text-2xl"
       >
         +

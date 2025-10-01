@@ -32,10 +32,13 @@ export const translations = {
 
     // Machines
     addMachine: 'Agregar Máquina',
+    editMachine: 'Editar Máquina',
     machineName: 'Nombre de la Máquina',
     machineNamePlaceholder: 'ej. Cinta de correr, Press de banca',
     selectType: 'Seleccionar tipo',
     noMachines: 'No hay máquinas aún. ¡Agrega tu primera máquina!',
+    confirmDelete: 'Confirmar Eliminación',
+    confirmDeleteMachineMessage: '¿Estás seguro de que quieres eliminar esta máquina? Esto también eliminará todos los entrenamientos asociados a ella.',
     machineTypes: {
       Cardio: 'Cardio',
       Strength: 'Fuerza',
@@ -148,10 +151,13 @@ export const translations = {
 
     // Machines
     addMachine: 'Add Machine',
+    editMachine: 'Edit Machine',
     machineName: 'Machine Name',
     machineNamePlaceholder: 'e.g. Treadmill, Bench Press',
     selectType: 'Select type',
     noMachines: 'No machines yet. Add your first machine!',
+    confirmDelete: 'Confirm Delete',
+    confirmDeleteMachineMessage: 'Are you sure you want to delete this machine? This will also delete all workouts associated with it.',
     machineTypes: {
       Cardio: 'Cardio',
       Strength: 'Strength',
