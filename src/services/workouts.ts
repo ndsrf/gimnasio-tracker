@@ -111,4 +111,17 @@ export const workoutService = {
   async delete(id: string): Promise<void> {
     await db.delete('workouts', id);
   },
+
+  async getLastWorkoutByCustomerAndMachine(customerId: string, machineId: string): Promise<Workout | undefined> {
+    const workouts = await db.getWorkoutsByCustomerAndMachine(customerId, machineId);
+    if (workouts.length === 0) return undefined;
+    
+    const migratedWorkouts = await processWorkouts(workouts);
+    
+    // Sort by date descending and return the most recent one
+    const sorted = migratedWorkouts.sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    return sorted[0];
+  },
 };
