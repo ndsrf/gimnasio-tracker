@@ -9,7 +9,7 @@ import { Sessions } from './screens/Sessions';
 import { Settings } from './screens/Settings';
 import { NewFeaturesPopup } from './components/NewFeaturesPopup';
 
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.1.1';
 const LOCAL_STORAGE_KEY = `gym-tracker-features-popup-shown-${APP_VERSION}`;
 
 function AppContent() {

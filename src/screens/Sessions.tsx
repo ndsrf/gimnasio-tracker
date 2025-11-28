@@ -119,12 +119,46 @@ export function Sessions() {
     setEditingWorkout(null);
   }
 
-  function openWorkoutForm() {
+  // Helper function to convert WorkoutSeries to form series format
+  function seriesToFormFormat(series: WorkoutSeries[]): { sets: string; reps: string; weight: string }[] {
+    return series.map(s => ({
+      sets: s.sets.toString(),
+      reps: s.reps.toString(),
+      weight: s.weight.toString(),
+    }));
+  }
+
+  // Default empty series for the form
+  const defaultFormSeries = [{ sets: '', reps: '', weight: '' }];
+
+  async function openWorkoutForm() {
     resetForm();
+    
+    // If a machine is selected, try to get previous workout values
+    if (selectedMachineId && selectedCustomerId) {
+      try {
+        const lastWorkout = await workoutService.getLastWorkoutByCustomerAndMachine(
+          selectedCustomerId,
+          selectedMachineId
+        );
+        if (lastWorkout && lastWorkout.series && lastWorkout.series.length > 0) {
+          setWorkoutForm(prev => ({
+            ...prev,
+            machineId: selectedMachineId,
+            series: seriesToFormFormat(lastWorkout.series),
+          }));
+          setShowWorkoutForm(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to get last workout:', error);
+      }
+    }
+    
     setWorkoutForm(prev => ({
       ...prev,
       machineId: selectedMachineId || '',
-      series: [{ sets: '', reps: '', weight: '' }],
+      series: defaultFormSeries,
     }));
     setShowWorkoutForm(true);
   }
@@ -134,11 +168,9 @@ export function Sessions() {
     setWorkoutForm({
       machineId: workout.machineId,
       date: new Date(workout.date).toISOString().split('T')[0],
-      series: workout.series && workout.series.length > 0 ? workout.series.map(s => ({
-        sets: s.sets.toString(),
-        reps: s.reps.toString(),
-        weight: s.weight.toString(),
-      })) : [{ sets: '', reps: '', weight: '' }],
+      series: workout.series && workout.series.length > 0 
+        ? seriesToFormFormat(workout.series) 
+        : defaultFormSeries,
       notes: workout.notes || '',
     });
     setShowWorkoutForm(true);
@@ -148,6 +180,33 @@ export function Sessions() {
     const newSeries = [...workoutForm.series];
     newSeries[index][field] = value;
     setWorkoutForm(prev => ({ ...prev, series: newSeries }));
+  }
+
+  async function handleFormMachineChange(machineId: string) {
+    setWorkoutForm(prev => ({ ...prev, machineId }));
+    
+    // If not editing and customer is selected, try to get previous workout values
+    if (!editingWorkout && selectedCustomerId && machineId) {
+      try {
+        const lastWorkout = await workoutService.getLastWorkoutByCustomerAndMachine(
+          selectedCustomerId,
+          machineId
+        );
+        if (lastWorkout && lastWorkout.series && lastWorkout.series.length > 0) {
+          setWorkoutForm(prev => ({
+            ...prev,
+            series: seriesToFormFormat(lastWorkout.series),
+          }));
+        } else {
+          setWorkoutForm(prev => ({
+            ...prev,
+            series: defaultFormSeries,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to get last workout:', error);
+      }
+    }
   }
 
   function addSeriesRow() {
@@ -292,7 +351,7 @@ export function Sessions() {
                 <select
                   required
                   value={workoutForm.machineId}
-                  onChange={(e) => setWorkoutForm(prev => ({ ...prev, machineId: e.target.value }))}
+                  onChange={(e) => handleFormMachineChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">{t('selectMachine')}</option>

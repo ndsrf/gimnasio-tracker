@@ -14,8 +14,7 @@ export function NewFeaturesPopup({ onClose }: NewFeaturesPopupProps) {
         <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('newFeaturesTitle')}</h2>
         <p className="text-gray-700 mb-4">{t('newFeaturesDescription')}</p>
         <ul className="list-disc list-inside text-gray-700 mb-6 space-y-2">
-          <li>{t('featureEditDeactivateUsers')}</li>
-          <li>{t('featureMultipleSeriesReps')}</li>
+          <li>{t('featureDefaultWorkoutValues')}</li>
         </ul>
         <button
           onClick={onClose}

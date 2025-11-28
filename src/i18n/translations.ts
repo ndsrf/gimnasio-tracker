@@ -105,10 +105,11 @@ export const translations = {
     failedToInitialize: 'Error al inicializar la base de datos',
 
     // New Features Popup
-    newFeaturesTitle: '¡Nuevas Características en la Versión 1.1.0!',
+    newFeaturesTitle: '¡Nuevas Características en la Versión 1.1.1!',
     newFeaturesDescription: 'Hemos añadido algunas mejoras emocionantes para ti:',
     featureEditDeactivateUsers: 'Ahora puedes editar y desactivar clientes existentes.',
     featureMultipleSeriesReps: 'Registra múltiples series y repeticiones para cada entrenamiento.',
+    featureDefaultWorkoutValues: 'Al añadir un nuevo entrenamiento, se copian las series, repeticiones y peso del entrenamiento anterior como valores predeterminados.',
     gotIt: '¡Entendido!',
 
     // Form validation
@@ -224,10 +225,11 @@ export const translations = {
     failedToInitialize: 'Failed to initialize database',
 
     // New Features Popup
-    newFeaturesTitle: 'New Features in Version 1.1.0!',
+    newFeaturesTitle: 'New Features in Version 1.1.1!',
     newFeaturesDescription: 'We\'ve added some exciting improvements for you:',
     featureEditDeactivateUsers: 'You can now edit and deactivate existing customers.',
     featureMultipleSeriesReps: 'Record multiple series and repetitions for each workout.',
+    featureDefaultWorkoutValues: 'When adding a new workout, the sets, reps, and weight from the previous workout are copied as default values.',
     gotIt: 'Got It!',
 
     // Form validation
